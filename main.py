@@ -1,5 +1,5 @@
 import json,os,sys,urllib.request as U
-E=os.environ.get("MAKEFUN_ENV_URL")or sys.exit("MAKEFUN_ENV_URL")
+E=os.environ.get("MAKEFUN_ENV_URL")or sys.exit(1)
 def post(p,b):
  with U.urlopen(U.Request(E+p,data=json.dumps(b).encode(),headers={"content-type":"application/json"}))as r:return json.load(r)
 V={"p":100,"n":320,"b":330,"r":500,"q":900,"k":20000}
@@ -48,29 +48,32 @@ def M(b,m,w):
  f=m&63;t=(m>>6)&63;pr=(m>>12)&7;n=b[:];p=n[f];n[f]="."
  n[t]=(PR[pr-1].upper()if w else PR[pr-1])if pr else p
  return n
-PS={};KM={}
+PS={};KE={}
 for w in(1,0):
  for k in"pnbrqk":
-  t=[]
+  t=[];g=[]
   for s in range(64):
    r,f=divmod(s,8);rw=7-r if w else r;c=abs(f-3.5)+abs(rw-3.5)
-   if k=="p":a=rw-1;x=6*a+2*a*a+(5 if f in(3,4)else 0)
+   if k=="p":a=rw-1;x=6*a+2*a*a
    elif k=="n":x=int(14-4*c)
-   elif k=="b":x=int(8-2*c)
-   elif k=="q":x=int(6-1.5*c)
-   elif k=="k":x=10 if rw==0 else-4*rw
+   elif k=="k":x=10 if rw==0 else-4*rw;g.append(int(16-4*c))
    else:x=0
    t.append(x if k=="k"else V[k]+x)
   PS[k.upper()if w else k]=t
-  if k=="k":KM["K"if w else"k"]=t
+  if k=="k":KE["K"if w else"k"]=g
 def W(b):
- s=0
+ s=0;ph=0;kg=[]
  for i in range(64):
   p=b[i]
   if p==".":continue
+  k=p.lower()
+  if k=="k":kg.append((p,i));continue
   s+=PS[p][i]if p.isupper()else-PS[p][i]
+  if k!="p":ph+=V[k]
+ for p,i in kg:
+  t=(KE if ph<=2400 else PS)[p];s+=t[i]if p=="K"else-t[i]
  return s
-MATE=100000;CAP=90000;N=0
+MATE=100000;CAP=150000;N=0
 def ok(b,m):
  v=b[(m>>6)&63]
  if v!=".":return 100000+10*V[v.lower()]-V[b[m&63].lower()]//32
@@ -97,9 +100,13 @@ def S(b,w,d,a,be,pl):
  if d<=0:return Q(b,w,a,be,pl)
  N+=1
  if N>CAP:return W(b)*(1 if w else-1)
- if any(b[(m>>6)&63].lower()=="k"for m in P(b,not w)):d+=1
+ ic=any(b[(m>>6)&63].lower()=="k"for m in P(b,not w))
+ if ic:d+=1
  ms=P(b,w)
  if not ms:return-MATE+pl
+ if d>2 and not ic and be<90000:
+  s=-S(b,not w,d-3,-be,-be+1,pl+1)
+  if s>=be:return be
  best=-10*MATE
  for m in sorted(ms,key=lambda z:-ok(b,z)):
   if b[(m>>6)&63].lower()=="k":return MATE-pl
@@ -117,7 +124,7 @@ def R(b,w):
  ms=P(b,w)
  if not ms:return None
  N=0;best=ms[0];od=list(ms)
- for d in range(1,10):
+ for d in range(1,99):
   sc=[];a=-10*MATE
   for m in od:
    s=-S(M(b,m,w),not w,d-1,-10*MATE,-a,1);sc.append((s,m))
@@ -135,7 +142,7 @@ def C(f,lu):
    p=uci(m)
    if p in lu:return p
  except Exception:pass
- return min(lu,key=lambda m:-V.get(b["abcdefgh".index(m[2])+8*(8-int(m[3]))].lower(),0))
+ return lu[0]
 def main():
  while 1:
   g=post("/game",{})
